@@ -1,0 +1,170 @@
+version: "3.2"
+
+services:
+  mysql:
+    container_name: mysql
+    image: mysql/mysql-server:5.7
+    environment:
+      - MYSQL_ROOT_PASSWORD=direct
+      - MYSQL_USER=nhind
+      - MYSQL_PASSWORD=nhind
+      - MYSQL_DATABASE=nhind
+    ports:
+      - 3306:3306
+
+  rabbitmq:
+    container_name: rabbitmq
+    image: rabbitmq:3-management
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    ports:
+      - 5672:5672
+      - 15672:15672
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 30s
+      timeout: 30s
+      retries: 3
+
+  config-service:
+    container_name: config-service
+    image: config-service:latest
+    environment:
+      - SERVICE_PORT=8082
+      - SERVICE_USERNAME=admin
+      - SERVICE_PASSWORD=direct
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - MYSQL_DATABASE=nhind
+      - MYSQL_USER=nhind
+      - MYSQL_PASSWORD=nhind
+      - DEFAULT_DOMAIN=my.hisp.local
+      - DEFAULT_POSTMASTER=postmaster@my.hisp.local
+    ports:
+      - 8082:8082
+    depends_on:
+      - mysql
+
+  config-ui:
+    container_name: config-ui
+    image: config-ui:latest
+    environment:
+      - SERVICE_PORT=8080
+      - SERVICE_USERNAME=admin
+      - SERVICE_PASSWORD=direct
+      - CONFIG_SERVICE_HOST=config-service
+      - CONFIG_SERVICE_PORT=8082
+    ports:
+      - 8080:8080
+    depends_on:
+      - config-service
+
+  smtp-mq-gateway:
+    user: root
+    container_name: smtp-mq-gateway
+    image: smtp-mq-gateway:latest
+    environment:
+      - RABBIT_MQ_HOST=rabbitmq
+      - RABBIT_MQ_PORT=5672
+      - RABBIT_MQ_USERNAME=guest
+      - RABBIT_MQ_PASSWORD=guest
+      - SMTP_MQ_GATEWAY_PORT=25
+    ports:
+      - "25:25"
+    depends_on:
+      - rabbitmq
+
+  msg-monitor:
+    container_name: msg-monitor
+    image: msg-monitor:latest
+    environment:
+      - SERVICE_PORT=8081
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - MYSQL_DATABASE=nhind
+      - MYSQL_USER=nhind
+      - MYSQL_PASSWORD=nhind
+      - RABBIT_MQ_HOST=rabbitmq
+      - RABBIT_MQ_PORT=5672
+      - RABBIT_MQ_USERNAME=guest
+      - RABBIT_MQ_PASSWORD=guest
+    ports:
+      - 8081:8081
+    depends_on:
+      - mysql
+      - rabbitmq
+
+  xd:
+    container_name: xd
+    image: xd:latest
+    environment:
+      - RABBIT_MQ_HOST=rabbitmq
+      - RABBIT_MQ_PORT=5672
+      - RABBIT_MQ_USERNAME=guest
+      - RABBIT_MQ_PASSWORD=guest
+      - SERVICE_PORT=8087
+      - WEBSERVICES_SECURITY_USERNAME=admin
+      - WEBSERVICES_SECURITY_PASSWORD=direct
+      - XD_USESTREAMS=true
+      - CONFIG_SERVICE_HOST=config-service
+      - CONFIG_SERVICE_PORT=8082
+    ports:
+      - 8087:8087
+    depends_on:
+      - rabbitmq
+      - config-service
+
+  sta:
+    container_name: sta
+    image: sta:latest
+    environment:
+      - RABBIT_MQ_HOST=rabbitmq
+      - RABBIT_MQ_PORT=5672
+      - RABBIT_MQ_USERNAME=guest
+      - RABBIT_MQ_PASSWORD=guest
+      - SERVICE_PORT=8083
+      - SERVICE_USERNAME=admin
+      - SERVICE_PASSWORD=direct
+      - CONFIG_SERVICE_HOST=config-service
+      - CONFIG_SERVICE_PORT=8082
+      - MSG_MONITOR_HOST=msg-monitor
+      - MSG_MONITOR_PORT=8081
+      - XD_HOST=xd
+      - XD_PORT=8087
+    ports:
+      - 8083:8083
+    depends_on:
+      - rabbitmq
+      - config-service
+      - msg-monitor
+      - xd
+      - smtp-mq-gateway
+    restart: on-failure
+
+  james-server:
+    container_name: james-server
+    image: james-server:latest
+    environment:
+      - SERVICE_PORT=8084
+      - WEBADMIN_PORT=8084
+      - WEBADMIN_USERNAME=admin
+      - WEBADMIN_PASSWORD=d1r3ct
+      - CONFIG_SERVICE_HOST=config-service
+      - CONFIG_SERVICE_PORT=8082
+      - RABBIT_MQ_HOST=rabbitmq
+      - RABBIT_MQ_PORT=5672
+      - RABBIT_MQ_USERNAME=guest
+      - RABBIT_MQ_PASSWORD=guest
+    volumes:
+      - ${PWD}/tmp/etc/James/conf:/opt/app/conf:rw
+      - ${PWD}/tmp/var:/opt/app/var:rw
+    ports:
+      - 8084:8084
+    depends_on:
+      - config-service
+      - rabbitmq
+      - msg-monitor
+      - sta
+      - xd
+    restart: on-failure
