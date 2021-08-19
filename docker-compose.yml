@@ -16,8 +16,8 @@ services:
     container_name: rabbitmq
     image: rabbitmq:3-management
     environment:
-      - RABBITMQ_DEFAULT_USER=guest
-      - RABBITMQ_DEFAULT_PASS=guest
+      - DEFAULT_USER=guest
+      - DEFAULT_PASS=guest
     ports:
       - 5672:5672
       - 15672:15672
@@ -55,6 +55,8 @@ services:
       - SERVICE_PASSWORD=direct
       - CONFIG_SERVICE_HOST=config-service
       - CONFIG_SERVICE_PORT=8082
+      - CONFIG_SERVICE_USER=admin
+      - CONFIG_SERVICE_PASSWORD=direct
     ports:
       - 8080:8080
     depends_on:
@@ -80,6 +82,8 @@ services:
     image: msg-monitor:latest
     environment:
       - SERVICE_PORT=8081
+      - SERVICE_USERNAME=admin
+      - SERVICE_PASSWORD=direct
       - MYSQL_HOST=mysql
       - MYSQL_PORT=3306
       - MYSQL_DATABASE=nhind
@@ -99,16 +103,16 @@ services:
     container_name: xd
     image: xd:latest
     environment:
+      - SERVICE_PORT=8087
       - RABBIT_MQ_HOST=rabbitmq
       - RABBIT_MQ_PORT=5672
       - RABBIT_MQ_USERNAME=guest
       - RABBIT_MQ_PASSWORD=guest
-      - SERVICE_PORT=8087
-      - WEBSERVICES_SECURITY_USERNAME=admin
-      - WEBSERVICES_SECURITY_PASSWORD=direct
       - XD_USESTREAMS=true
       - CONFIG_SERVICE_HOST=config-service
       - CONFIG_SERVICE_PORT=8082
+      - CONFIG_SERVICE_USERNAME=admin
+      - CONFIG_SERVICE_PASSWORD=direct
     ports:
       - 8087:8087
     depends_on:
@@ -124,10 +128,10 @@ services:
       - RABBIT_MQ_USERNAME=guest
       - RABBIT_MQ_PASSWORD=guest
       - SERVICE_PORT=8083
-      - SERVICE_USERNAME=admin
-      - SERVICE_PASSWORD=direct
       - CONFIG_SERVICE_HOST=config-service
       - CONFIG_SERVICE_PORT=8082
+      - CONFIG_SERVICE_USERNAME=admin
+      - CONFIG_SERVICE_PASSWORD=direct
       - MSG_MONITOR_HOST=msg-monitor
       - MSG_MONITOR_PORT=8081
       - XD_HOST=xd
@@ -148,10 +152,14 @@ services:
     environment:
       - SERVICE_PORT=8084
       - WEBADMIN_PORT=8084
+      - IMAP_PORT=1143
+      - POP_PORT=1110
       - WEBADMIN_USERNAME=admin
       - WEBADMIN_PASSWORD=d1r3ct
       - CONFIG_SERVICE_HOST=config-service
       - CONFIG_SERVICE_PORT=8082
+      - CONFIG_SERVICE_USERNAME=admin
+      - CONFIG_SERVICE_PASSWORD=direct
       - RABBIT_MQ_HOST=rabbitmq
       - RABBIT_MQ_PORT=5672
       - RABBIT_MQ_USERNAME=guest
@@ -161,10 +169,26 @@ services:
       - ${PWD}/tmp/var:/opt/app/var:rw
     ports:
       - 8084:8084
+      - 1143:1143
     depends_on:
       - config-service
       - rabbitmq
       - msg-monitor
       - sta
       - xd
+    restart: on-failure
+
+  dns:
+    container_name: dns
+    image: dns:latest
+    environment:
+      - BINDING_PORT=1053
+      - CONFIG_SERVICE_HOST=config-service
+      - CONFIG_SERVICE_PORT=8082
+      - CONFIG_SERVICE_USERNAME=admin
+      - CONFIG_SERVICE_PASSWORD=direct
+    ports:
+      - 1053:1053
+    depends_on:
+      - config-service
     restart: on-failure
