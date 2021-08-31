@@ -31,6 +31,7 @@ services:
     container_name: config-service
     image: config-service:latest
     environment:
+      - CLOUD_CONFIG=false
       - SERVICE_PORT=8082
       - SERVICE_USERNAME=admin
       - SERVICE_PASSWORD=direct
@@ -50,6 +51,7 @@ services:
     container_name: config-ui
     image: config-ui:latest
     environment:
+      - CLOUD_CONFIG=false
       - SERVICE_PORT=8080
       - SERVICE_USERNAME=admin
       - SERVICE_PASSWORD=direct
@@ -67,6 +69,7 @@ services:
     container_name: smtp-mq-gateway
     image: smtp-mq-gateway:latest
     environment:
+      - CLOUD_CONFIG=false
       - RABBIT_MQ_HOST=rabbitmq
       - RABBIT_MQ_PORT=5672
       - RABBIT_MQ_USERNAME=guest
@@ -81,6 +84,7 @@ services:
     container_name: msg-monitor
     image: msg-monitor:latest
     environment:
+      - CLOUD_CONFIG=false
       - SERVICE_PORT=8081
       - SERVICE_USERNAME=admin
       - SERVICE_PASSWORD=direct
@@ -103,6 +107,7 @@ services:
     container_name: xd
     image: xd:latest
     environment:
+      - CLOUD_CONFIG=false
       - SERVICE_PORT=8087
       - RABBIT_MQ_HOST=rabbitmq
       - RABBIT_MQ_PORT=5672
@@ -123,6 +128,7 @@ services:
     container_name: sta
     image: sta:latest
     environment:
+      - CLOUD_CONFIG=false
       - RABBIT_MQ_HOST=rabbitmq
       - RABBIT_MQ_PORT=5672
       - RABBIT_MQ_USERNAME=guest
@@ -150,6 +156,7 @@ services:
     container_name: james-server
     image: james-server:latest
     environment:
+      - CLOUD_CONFIG=false
       - SERVICE_PORT=8084
       - WEBADMIN_PORT=8084
       - IMAP_PORT=1143
@@ -182,6 +189,7 @@ services:
     container_name: dns
     image: dns:latest
     environment:
+      - CLOUD_CONFIG=false
       - BINDING_PORT=1053
       - CONFIG_SERVICE_HOST=config-service
       - CONFIG_SERVICE_PORT=8082
