@@ -1,4 +1,4 @@
-version: "3.2"
+version: "3.9"
 
 services:
   mysql:
@@ -161,6 +161,7 @@ services:
       - WEBADMIN_PORT=8084
       - IMAP_PORT=1143
       - POP_PORT=1110
+      - SMTP_PORT=1587
       - WEBADMIN_USERNAME=admin
       - WEBADMIN_PASSWORD=d1r3ct
       - CONFIG_SERVICE_HOST=config-service
@@ -177,6 +178,7 @@ services:
     ports:
       - 8084:8084
       - 1143:1143
+      - 1587:1587
     depends_on:
       - config-service
       - rabbitmq
@@ -190,13 +192,15 @@ services:
     image: dns:latest
     environment:
       - CLOUD_CONFIG=false
+      - BINDING_ADDRESS=0.0.0.0
       - BINDING_PORT=1053
       - CONFIG_SERVICE_HOST=config-service
       - CONFIG_SERVICE_PORT=8082
       - CONFIG_SERVICE_USERNAME=admin
       - CONFIG_SERVICE_PASSWORD=direct
     ports:
-      - 1053:1053
+      - 1053:1053/tcp
+      - 1053:1053/udp
     depends_on:
       - config-service
     restart: on-failure
